@@ -20,4 +20,3 @@
 <dt>procman.pmd</dt>
 <dd>procman config file, adjust this to make your pman show the nodes and launch files you need</dd>
 </dl>
-
