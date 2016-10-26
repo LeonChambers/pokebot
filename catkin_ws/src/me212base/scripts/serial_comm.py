@@ -3,11 +3,11 @@
 # 2.12 Lab 2 me212bot: ROS driver running on the pc side to read and send messages to Arduino
 # Peter Yu Sept 2016
 
-import rospy
-import threading
-import serial
-import traceback
 import sys
+import rospy
+import serial
+import threading
+import traceback
 
 from me212base.msg import WheelVelCmd
 from geometry_msgs.msg import Pose2D
@@ -25,7 +25,9 @@ class Arduino():
         
         self.prevtime = rospy.Time.now()
         
-        self.velcmd_sub = rospy.Subscriber("cmdvel", WheelVelCmd, self.cmdvel)
+        self.velcmd_sub = rospy.Subscriber(
+            "velocity_command", WheelVelCmd, self.cmdvel
+        )
         self.pose_pub = rospy.Publisher(
             "base_pose/dead_reckoning", Pose2D, queue_size=10
         )
