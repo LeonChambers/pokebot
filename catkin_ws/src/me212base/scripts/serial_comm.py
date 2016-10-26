@@ -4,17 +4,13 @@
 # Peter Yu Sept 2016
 
 import rospy
-import tf
-import numpy as np
 import threading
 import serial
-import pdb
 import traceback
 import sys
 
-from visualization_msgs.msg import Marker
 from me212base.msg import WheelVelCmd
-from geometry_msgs.msg import Point, Pose, Twist
+from geometry_msgs.msg import Pose2D
 
 port = '/dev/ttyACM0'
 
@@ -30,7 +26,9 @@ class Arduino():
         self.prevtime = rospy.Time.now()
         
         self.velcmd_sub = rospy.Subscriber("cmdvel", WheelVelCmd, self.cmdvel)
-        
+        self.pose_pub = rospy.Publisher(
+            "base_pose/dead_reckoning", Pose2D, queue_size=10
+        )
 
     def cmdvel(self, msg):  
         self.comm.write("%f,%f\n" % (msg.desiredWV_R, msg.desiredWV_L))
@@ -48,11 +46,10 @@ class Arduino():
                 x     = float(splitData[0]);
                 y     = float(splitData[1]);
                 theta = float(splitData[2]);
-                hz    = 1.0 / (rospy.Time.now().to_sec() - self.prevtime.to_sec())
                 
-                print 'x=', x, ' y=', y, ' theta =', theta, ' hz =', hz; 
-                    
-                self.prevtime = rospy.Time.now()
+                self.pose_pub.publish(Pose(
+                    x, y, theta
+                ))
                 
             except:
                 # print out msg if there is an error parsing a serial msg
@@ -62,7 +59,7 @@ class Arduino():
 
 
 def main():
-    rospy.init_node('me212base_node', anonymous=True)
+    rospy.init_node('me212bot', anonymous=True)
     arduino = Arduino()
     rospy.spin()
     
