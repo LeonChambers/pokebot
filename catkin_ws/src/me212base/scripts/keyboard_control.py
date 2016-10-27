@@ -12,7 +12,7 @@ import curses
 
 from me212base.msg import WheelVelCmd
 
-MAX_WHEEL_VELOCITY = 1
+MAX_WHEEL_VELOCITY = 0.4
 
 rospy.init_node("keyboard_control")
 vel_pub = rospy.Publisher(
@@ -32,9 +32,9 @@ while True:
     c = stdscr.getch()
     if c == curses.KEY_LEFT:
         msg.desiredWV_R = MAX_WHEEL_VELOCITY
-        msg.desiredWV_L = 0
+        msg.desiredWV_L = -MAX_WHEEL_VELOCITY
     elif c == curses.KEY_RIGHT:
-        msg.desiredWV_R = 0
+        msg.desiredWV_R = -MAX_WHEEL_VELOCITY
         msg.desiredWV_L = MAX_WHEEL_VELOCITY
     elif c == curses.KEY_UP:
         msg.desiredWV_R = MAX_WHEEL_VELOCITY

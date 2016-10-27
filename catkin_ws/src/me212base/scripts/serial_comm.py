@@ -39,7 +39,7 @@ class Arduino():
     def loop(self):
         while not rospy.is_shutdown():
             # 1. get a line of string that represent current odometry from serial
-            serialData = self.comm.readline()
+            serialData = self.comm.readline().strip()
             
             # 2. parse the string e.g. "0.1,0.2,0.1" to doubles
             splitData = serialData.split(',');
@@ -49,9 +49,10 @@ class Arduino():
                 y     = float(splitData[1]);
                 theta = float(splitData[2]);
                 
-                self.pose_pub.publish(Pose(
+                self.pose_pub.publish(Pose2D(
                     x, y, theta
                 ))
+                print "(x={}, y={}, theta={})".format(x, y, theta)
                 
             except:
                 # print out msg if there is an error parsing a serial msg
