@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 
 <launch>
-    <arg name="virtual" default="true" />
+    <arg name="virtual" default="false" />
 
     <!-- Arduino (real or simulated) -->
     <node if="$(arg virtual)" name="base_simulator" pkg="me212base" type="base_simulator.py" />
@@ -9,4 +9,7 @@
 
     <!-- Visualization -->
     <node name="base_tf_broadcaster" pkg="me212base" type="base_tf_broadcaster.py" />
+
+    <!-- Navigation -->
+
 </launch>
