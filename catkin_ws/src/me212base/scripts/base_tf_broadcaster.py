@@ -3,21 +3,23 @@
 import tf
 import rospy
 
-from geometry_msgs.msg import Pose2D
+from nav_msgs.msg import Odometry
 
 class TfBroadcaster():
     def __init__(self, src_topic, frame_id, parent_frame_id):
         self.frame_id = frame_id
         self.parent_frame_id = parent_frame_id
-        self.pose_sub = rospy.Subscriber(
-            src_topic, Pose2D, self.pose_callback
+        self.odom_sub = rospy.Subscriber(
+            src_topic, Odometry, self.odom_callback
         )
         self.tb = tf.TransformBroadcaster()
 
-    def pose_callback(self, pose):
+    def odom_callback(self, odom):
+        pos = odom.pose.pose.position
+        ori = odom.pose.pose.orientation
         self.tb.sendTransform(
-            (pose.x, pose.y, 0), 
-            tf.transformations.quaternion_from_euler(0, 0, pose.theta),
+            (pos.x, pos.y, pos.z), 
+            (ori.x, ori.y, ori.z, ori.w),
             rospy.Time.now(),
             self.frame_id,
             self.parent_frame_id
@@ -25,5 +27,5 @@ class TfBroadcaster():
 
 if __name__ == '__main__':
     rospy.init_node('pose_visualizer')
-    p = TfBroadcaster("/base_pose/dead_reckoning", "base", "map")
+    p = TfBroadcaster("/odom", "base_link", "map")
     rospy.spin()

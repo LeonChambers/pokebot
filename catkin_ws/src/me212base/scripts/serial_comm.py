@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # 2.12 Lab 2 me212bot: ROS driver running on the pc side to read and send messages to Arduino
 # Peter Yu Sept 2016
@@ -9,33 +9,38 @@ import serial
 import threading
 import traceback
 
-from me212base.msg import WheelVelCmd
-from geometry_msgs.msg import Pose2D
+from tf.transformations import quaternion_from_euler as e_to_quat
+from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Twist
 
-port = '/dev/ttyACM0'
+b = 0.225
 
 class Arduino():
     def __init__(self, port = '/dev/ttyACM0'):
         self.comm = serial.Serial(port, 115200, timeout = 5)
-        self.sendbuff = []
-        self.readbuff = ''
+        self.odom = Odometry()
         
         self.thread = threading.Thread(target = self.loop)
         self.thread.start()
         
-        self.prevtime = rospy.Time.now()
-        
-        self.velcmd_sub = rospy.Subscriber(
-            "velocity_command", WheelVelCmd, self.cmdvel
-        )
-        self.pose_pub = rospy.Publisher(
-            "base_pose/dead_reckoning", Pose2D, queue_size=10
+        self.cmd_vel_sub = rospy.Subscriber("cmd_vel", Twist, self.cmd_vel)
+        self.odom_pub = rospy.Publisher(
+            "/odom/dead_reckoning", Odometry, queue_size=10
         )
 
-    def cmdvel(self, msg):  
-        self.comm.write("%f,%f\n" % (msg.desiredWV_R, msg.desiredWV_L))
+    def cmd_vel(self, msg):  
+        # Compute wheel velocities from the Twist message
+        vx = msg.linear.x
+        vtheta = msg.angular.z
+        vr = vx + vtheta * b
+        vl = vx - vtheta * b
+
+        # Send the wheel velocities
+        self.comm.write("%f,%f\n" % (vr, vl))
+
+        # Update the odometry message with the new velocities
+        self.odom.twist.twist = msg
     
-    # loop() is for reading odometry from Arduino and publish to rostopic.
     def loop(self):
         while not rospy.is_shutdown():
             # 1. get a line of string that represent current odometry from serial
@@ -49,10 +54,13 @@ class Arduino():
                 y     = float(splitData[1]);
                 theta = float(splitData[2]);
                 
-                self.pose_pub.publish(Pose2D(
-                    x, y, theta
-                ))
                 print "(x={}, y={}, theta={})".format(x, y, theta)
+
+                self.odom.pose.position.x = x
+                self.odom.pose.position.y = y
+                self.odom.pose.orientation = e_to_quat(0, 0, theta)
+
+                self.odom_pub.publish(self.odom)
                 
             except:
                 # print out msg if there is an error parsing a serial msg
@@ -63,7 +71,7 @@ class Arduino():
 
 def main():
     rospy.init_node('me212bot', anonymous=True)
-    arduino = Arduino()
+    arduino = Arduino('/dev/ttyACM0')
     rospy.spin()
     
 if __name__=='__main__':
