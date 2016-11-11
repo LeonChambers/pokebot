@@ -1,12 +1,8 @@
 <?xml version="1.0" ?>
 
 <launch>
-    <arg name="virtual" default="false" />
-
     <!-- Robot (real or simulated) -->
-    <node if="$(arg virtual)" name="stage_ros" pkg="stage_ros" type="stageros" args="$(find me212base)/worlds/arena.world" />
-    <param if="$(arg virtual)" name="use_sim_time" type="bool" value="true" />
-    <node unless="$(arg virtual)" name="serial_comm" pkg="me212base" type="serial_comm.py" />
+    <node name="serial_comm" pkg="me212base" type="serial_comm.py" />
 
     <!-- SLAM -->
     <node name="gmapping" pkg="gmapping" type="slam_gmapping" args="scan:=base_scan" />
@@ -14,9 +10,7 @@
     <!-- Navigation -->
     <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
         <param name="base_global_planner" type="str" value="global_planner/GlobalPlanner" />
-
         <param name="base_local_planner" type="str" value="base_local_planner/TrajectoryPlannerROS" />
-
         <param name="recovery_behavior_enabled" type="bool" value="true" />
 
         <rosparam file="$(find me212base)/config/costmap_common_params.yaml" command="load" ns="global_costmap" />
