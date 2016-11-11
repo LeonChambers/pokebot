@@ -34,3 +34,4 @@ drake_viewer.out
 core
 .~lock*
 
+*.orig

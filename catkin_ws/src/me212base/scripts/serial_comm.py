@@ -11,24 +11,34 @@ import traceback
 
 from tf.transformations import quaternion_from_euler as e_to_quat
 from nav_msgs.msg import Odometry
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, Quaternion
 
 b = 0.225
 
+class DummySerial:
+    def write(self, msg):
+        pass
+
+    def readline(self):
+        return "0,0,0"
+
 class Arduino():
     def __init__(self, port = '/dev/ttyACM0'):
-        self.comm = serial.Serial(port, 115200, timeout = 5)
+        if port is None:
+            self.comm = DummySerial()
+        else:
+            self.comm = serial.Serial(port, 115200, timeout=5)
         self.odom = Odometry()
         
-        self.thread = threading.Thread(target = self.loop)
-        self.thread.start()
-        
-        self.cmd_vel_sub = rospy.Subscriber("cmd_vel", Twist, self.cmd_vel)
+        self.cmd_vel_sub = rospy.Subscriber("cmd_vel", Twist, self.on_cmd_vel)
         self.odom_pub = rospy.Publisher(
-            "/odom/dead_reckoning", Odometry, queue_size=10
+            "/odom", Odometry, queue_size=10
         )
 
-    def cmd_vel(self, msg):  
+        self.thread = threading.Thread(target = self.loop)
+        self.thread.start()
+
+    def on_cmd_vel(self, msg):  
         # Compute wheel velocities from the Twist message
         vx = msg.linear.x
         vtheta = msg.angular.z
@@ -36,7 +46,8 @@ class Arduino():
         vl = vx - vtheta * b
 
         # Send the wheel velocities
-        self.comm.write("%f,%f\n" % (vr, vl))
+        serial_msg = "%f,%f\n" % (vr, vl)
+        self.comm.write(serial_msg)
 
         # Update the odometry message with the new velocities
         self.odom.twist.twist = msg
@@ -53,16 +64,14 @@ class Arduino():
                 x     = float(splitData[0]);
                 y     = float(splitData[1]);
                 theta = float(splitData[2]);
-                
-                print "(x={}, y={}, theta={})".format(x, y, theta)
 
-                self.odom.pose.position.x = x
-                self.odom.pose.position.y = y
-                self.odom.pose.orientation = e_to_quat(0, 0, theta)
+                self.odom.pose.pose.position.x = x
+                self.odom.pose.pose.position.y = y
+                self.odom.pose.pose.orientation = Quaternion(*e_to_quat(0, 0, theta))
 
                 self.odom_pub.publish(self.odom)
                 
-            except:
+            except KeyError:
                 # print out msg if there is an error parsing a serial msg
                 print 'Cannot parse', splitData
                 ex_type, ex, tb = sys.exc_info()
