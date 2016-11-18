@@ -36,7 +36,7 @@ cx = msg.P[2]
 cy = msg.P[6]
 
 def main():
-    useHSV   = False 
+    useHSV   = True 
     useDepth = False
     if not useHSV:
         # Task 1
@@ -114,16 +114,52 @@ def HSVObjectDetection(cv_image, toPrint = True):
     # define range of red color in HSV
     lower_red = np.array([170,50,50])
     upper_red = np.array([180,255,255])
+    
+    lower_green = np.array([75,50,50])
+    upper_green = np.array([100,255,255])
+    
+    lower_blue = np.array([110,50,50])
+    upper_blue = np.array([140,255,255])
 
     # Threshold the HSV image to get only red colors
-    mask = cv2.inRange(hsv_image, lower_red, upper_red)   ##
-    mask_eroded         = cv2.erode(mask, None, iterations = 3)  ##
-    mask_eroded_dilated = cv2.dilate(mask_eroded, None, iterations = 10)  ##
+    maskr = cv2.inRange(hsv_image, lower_red, upper_red)   ##
+    mask_erodedr         = cv2.erode(maskr, None, iterations = 3)  ##
+    mask_eroded_dilatedr = cv2.dilate(mask_erodedr, None, iterations = 10)  ##
+    
+    maskg = cv2.inRange(hsv_image, lower_green, upper_green)   ##
+    mask_erodedg         = cv2.erode(maskg, None, iterations = 3)  ##
+    mask_eroded_dilatedg = cv2.dilate(mask_erodedg, None, iterations = 10)  ##
+    
+    maskb = cv2.inRange(hsv_image, lower_blue, upper_blue)   ##
+    mask_erodedb         = cv2.erode(maskb, None, iterations = 3)  ##
+    mask_eroded_dilatedb = cv2.dilate(mask_erodedb, None, iterations = 10)  ##
+    
+    detectorIm = (255-mask_eroded_dilatedg)
+    
+    detector = cv2.SimpleBlobDetector_create()
+    
+    blank_mask = cv2.inRange(hsv_image, np.array([10,50,50]), np.array([10,50,50]))
+    mask_eroded = blank_mask
+    mask_eroded_dilated=blank_mask
+    
+    keypoints = detector.detect(detectorIm)
+    if len(keypoints)>1:
+        mask_eroded = mask_erodedg
+        mask_eroded_dilated = mask_eroded_dilatedg
+    else:
+        keypoints = detector.detect((255-mask_eroded_dilatedb))
+        if len(keypoints)>1:
+            mask_eroded = mask_erodedb
+            mask_eroded_dilated = mask_eroded_dilatedb
+    
+    im_with_keypoints = cv2.drawKeypoints(detectorIm, keypoints, np.array([]), (0,0,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
     
     if toPrint:
         print 'hsv', hsv_image[240][320] # the center point hsv
+        print len(keypoints)
         
     showImageInCVWindow(cv_image, mask_eroded, mask_eroded_dilated)
+    #showImageInCVWindow(im_with_keypoints, mask_eroded, mask_eroded_dilated)
     image,contours,hierarchy = cv2.findContours(mask_eroded_dilated,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
     return contours, mask_eroded_dilated
 
