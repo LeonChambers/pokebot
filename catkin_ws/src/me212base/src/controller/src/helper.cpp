@@ -7,7 +7,7 @@
 #include "helper.h"
 
 //Encoder Measurement Class function implementation
-EncoderMeasurement::EncoderMeasurement(int motor_type): 
+EncoderMeasurement::EncoderMeasurement(int motor_type):
     encoder1CountPrev(0),
     encoder2CountPrev(0),
     v_R(0), v_L(0)
@@ -23,11 +23,11 @@ EncoderMeasurement::EncoderMeasurement(int motor_type):
     }
     else
         Serial.println("ERROR: BAD MOTOR TYPE INPUT, SHOULD BE 26 or 53");
-        
+
     enc2rev = 1.0 / rev2enc;
     enc2rad = enc2rev * 2 * PI;
-    enc2wheel = enc2rad * wheelRadius; 
-    
+    enc2wheel = enc2rad * wheelRadius;
+
     maxMV = voltage * motor_const / gearing * wheelRadius;  // max wheel speed (m/2)
 }
 
@@ -36,18 +36,18 @@ void EncoderMeasurement::update() {
     float encoder2Count = -1 * readEncoder(2);
     float dEncoder1 = (encoder1Count - encoder1CountPrev);
     float dEncoder2 = (encoder2Count - encoder2CountPrev);
-    
+
     //update the angle incremet in radians
     float dphi1 = (dEncoder1 * enc2rad);
     float dphi2 = (dEncoder2 * enc2rad);
-    
+
     //for encoder index and motor position switching (Right is 1, Left is 2)
     dThetaR = dphi1;
     dThetaL = dphi2;
-    
+
     float dWheel1 = (dEncoder1 * enc2wheel);
     float dWheel2 = (dEncoder2 * enc2wheel);
-    
+
     //wheel velocity (Right is 1, Left is 2)
     float mV1 = dWheel1 / PERIOD;
     float mV2 = dWheel2 / PERIOD;
@@ -61,16 +61,16 @@ void EncoderMeasurement::update() {
 void RobotPose::update(float dThetaL, float dThetaR) {
     // orientation angle theta increment in radians
     float dTh = (r / (2.0 * b)) * (dThetaR - dThetaL);
-    
+
     Th += dTh;
-    
+
     // robot X, Y position increment in meters
-    float dX = (r / 2.0) * cos(Th) * (dThetaR + dThetaL); 
+    float dX = (r / 2.0) * cos(Th) * (dThetaR + dThetaL);
     float dY = (r / 2.0) * sin(Th) * (dThetaR + dThetaL);
-    
+
     X += dX;
     Y += dY;
-    
+
     pathDistance += sqrt(dX * dX + dY * dY);
 }
 
@@ -78,14 +78,14 @@ void RobotPose::update(float dThetaL, float dThetaR) {
 void PIController::doPIControl(String side, float desV, float currV) {
     float error = desV - currV;
 
-    if (side == "Right") {     // Motor 1 
+    if (side == "Right") {     // Motor 1
         // P
         float PCommand = Kpv1 * error;
 
         // I
         mIntegratedVError1 = constrain(mIntegratedVError1 + error * PERIOD, -0.02, 0.02);
         float ICommand = Kiv1 * mIntegratedVError1;
-        
+
         // Sum
         float command =  PCommand + ICommand;
 

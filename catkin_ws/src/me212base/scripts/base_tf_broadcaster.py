@@ -18,7 +18,7 @@ class TfBroadcaster():
         pos = odom.pose.pose.position
         ori = odom.pose.pose.orientation
         self.tb.sendTransform(
-            (pos.x, pos.y, pos.z), 
+            (pos.x, pos.y, pos.z),
             (ori.x, ori.y, ori.z, ori.w),
             rospy.Time.now(),
             self.frame_id,
@@ -27,5 +27,5 @@ class TfBroadcaster():
 
 if __name__ == '__main__':
     rospy.init_node('pose_visualizer')
-    p = TfBroadcaster("/odom", "base_link", "map")
+    p = TfBroadcaster("/odom", "base_link", "odom")
     rospy.spin()

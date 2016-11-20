@@ -25,25 +25,25 @@ void setup() {
 void loop() {
     //timed loop implementation
     unsigned long currentTime = micros();
-    
+
     if (currentTime - prevTime >= PERIOD_MICROS) {
-      
+
         // 1. Check encoder
-        encoder.update(); 
+        encoder.update();
 
         // 2. Update position
-        robotPose.update(encoder.dThetaL, encoder.dThetaR); 
+        robotPose.update(encoder.dThetaL, encoder.dThetaR);
 
         // 3. Send odometry through serial communication
-        serialComm.send(robotPose); 
+        serialComm.send(robotPose);
         serialComm.receiveSerialData();
 
         // 4. Send the velocity command to wheel velocity controller
-        wheelVelCtrl.doPIControl("Left",  serialComm.desiredWV_L, encoder.v_L); 
+        wheelVelCtrl.doPIControl("Left",  serialComm.desiredWV_L, encoder.v_L);
         wheelVelCtrl.doPIControl("Right", serialComm.desiredWV_R, encoder.v_R);
 
         prevTime = currentTime; // update time
-    } 
+    }
 }
 
 

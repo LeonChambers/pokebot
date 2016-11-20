@@ -6,7 +6,7 @@ resolution: 0.05
 observation_sources: kinect
 kinect:
     topic: /camera/depth/points
-    sensor_frame: camera
+    sensor_frame: camera_depth_optical_frame
     data_type: PointCloud2
     clearing: true
     marking: true
