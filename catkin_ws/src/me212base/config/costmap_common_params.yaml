@@ -10,11 +10,11 @@ kinect:
     data_type: PointCloud2
     clearing: true
     marking: true
+    max_obstacle_height: 0.5
     obstacle_range: 1.0
     raytrace_range: 1.5
 
 # Inflation layer
-inflation_radius: 0.1
+inflation_radius: 0.25
 
-# TODO: Remove this
-footprint: [[0.25, 0], [0.2, -0.1], [-0.2, -0.1], [-0.25, 0], [-0.2, -0.3], [0.2, 0.3]]
+footprint: [[0, -0.25], [0.1, -0.2], [0.1, 0.2], [0, 0.25], [-0.3, 0.2], [-0.3, -0.2]]
