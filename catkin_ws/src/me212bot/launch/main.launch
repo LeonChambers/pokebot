@@ -1,0 +1,6 @@
+<launch>
+    <include file="$(find me212base)/launch/navigation.launch" />
+    <include file="$(find me212cv)/launch/frames.launch" />
+    <include file="$(find freenect_launch)/launch/freenect.launch" />
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find me212bot)/config/me212bot.rviz" />
+</launch>

@@ -3,18 +3,16 @@ static_map: false
 resolution: 0.05
 
 # Obstacles layer
-observation_sources: kinect
-kinect:
-    topic: /camera/depth/points
-    sensor_frame: camera
-    data_type: PointCloud2
+observation_sources: laser
+laser:
+    topic: /scan
+    data_type: LaserScan
     clearing: true
     marking: true
-    obstacle_range: 1.0
-    raytrace_range: 1.5
+    inf_is_valid: false
+    obstacle_range: 2.0
 
 # Inflation layer
-inflation_radius: 0.1
+inflation_radius: 0.25
 
-# TODO: Remove this
-footprint: [[0.25, 0], [0.2, -0.1], [-0.2, -0.1], [-0.25, 0], [-0.2, -0.3], [0.2, 0.3]]
+footprint: [[0, -0.25], [0.1, -0.2], [0.1, 0.2], [0, 0.25], [-0.3, 0.2], [-0.3, -0.2]]

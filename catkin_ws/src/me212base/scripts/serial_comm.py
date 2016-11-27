@@ -29,7 +29,8 @@ class Arduino():
         else:
             self.comm = serial.Serial(port, 115200, timeout=5)
         self.odom = Odometry()
-        
+        self.odom.child_frame_id = 'base_link'
+
         self.cmd_vel_sub = rospy.Subscriber("cmd_vel", Twist, self.on_cmd_vel)
         self.odom_pub = rospy.Publisher(
             "/odom", Odometry, queue_size=10
@@ -38,7 +39,7 @@ class Arduino():
         self.thread = threading.Thread(target = self.loop)
         self.thread.start()
 
-    def on_cmd_vel(self, msg):  
+    def on_cmd_vel(self, msg):
         # Compute wheel velocities from the Twist message
         vx = msg.linear.x
         vtheta = msg.angular.z
@@ -51,15 +52,15 @@ class Arduino():
 
         # Update the odometry message with the new velocities
         self.odom.twist.twist = msg
-    
+
     def loop(self):
         while not rospy.is_shutdown():
             # 1. get a line of string that represent current odometry from serial
             serialData = self.comm.readline().strip()
-            
+
             # 2. parse the string e.g. "0.1,0.2,0.1" to doubles
             splitData = serialData.split(',');
-            
+
             try:
                 x     = float(splitData[0]);
                 y     = float(splitData[1]);
@@ -70,8 +71,8 @@ class Arduino():
                 self.odom.pose.pose.orientation = Quaternion(*e_to_quat(0, 0, theta))
 
                 self.odom_pub.publish(self.odom)
-                
-            except ValueError, IndexError:
+
+            except (ValueError, IndexError):
                 # print out msg if there is an error parsing a serial msg
                 print 'Cannot parse', splitData
                 ex_type, ex, tb = sys.exc_info()
@@ -82,7 +83,7 @@ def main():
     rospy.init_node('me212bot', anonymous=True)
     arduino = Arduino('/dev/ttyACM0')
     rospy.spin()
-    
+
 if __name__=='__main__':
     main()
-    
+
