@@ -71,7 +71,7 @@ class Arduino():
 
                 self.odom_pub.publish(self.odom)
                 
-            except KeyError:
+            except ValueError, IndexError:
                 # print out msg if there is an error parsing a serial msg
                 print 'Cannot parse', splitData
                 ex_type, ex, tb = sys.exc_info()
