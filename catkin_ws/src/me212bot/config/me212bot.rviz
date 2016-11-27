@@ -54,6 +54,30 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: true
+        apriltag0:
+          Value: true
+        apriltag1:
+          Value: true
+        apriltag10:
+          Value: true
+        apriltag2:
+          Value: true
+        apriltag3:
+          Value: true
+        apriltag4:
+          Value: true
+        apriltag5:
+          Value: true
+        apriltag6:
+          Value: true
+        apriltag7:
+          Value: true
+        apriltag8:
+          Value: true
+        apriltag9:
+          Value: true
+        apriltag_root:
+          Value: true
         base_link:
           Value: true
         camera_depth_frame:
@@ -68,7 +92,19 @@ Visualization Manager:
           Value: true
         map:
           Value: true
-        odom:
+        waypoint_1_0:
+          Value: true
+        waypoint_1_1:
+          Value: true
+        waypoint_1_3:
+          Value: true
+        waypoint_1_shelf:
+          Value: true
+        waypoint_2_shelf:
+          Value: true
+        waypoint_tote:
+          Value: true
+        waypoiny_3_shelf:
           Value: true
       Marker Scale: 0.5
       Name: TF
@@ -77,16 +113,76 @@ Visualization Manager:
       Show Names: true
       Tree:
         map:
-          odom:
-            base_link:
-              camera_link:
-                camera_depth_frame:
-                  camera_depth_optical_frame:
-                    {}
-                camera_rgb_frame:
-                  camera_rgb_optical_frame:
-                    {}
+          apriltag_root:
+            apriltag0:
+              waypoint_1_0:
+                {}
+            apriltag1:
+              waypoint_1_1:
+                {}
+            apriltag10:
+              {}
+            apriltag2:
+              {}
+            apriltag3:
+              waypoint_1_shelf:
+                {}
+            apriltag4:
+              {}
+            apriltag5:
+              waypoint_1_3:
+                {}
+              waypoint_tote:
+                {}
+            apriltag6:
+              {}
+            apriltag7:
+              {}
+            apriltag8:
+              waypoiny_3_shelf:
+                {}
+            apriltag9:
+              waypoint_2_shelf:
+                {}
+          base_link:
+            camera_link:
+              camera_depth_frame:
+                camera_depth_optical_frame:
+                  {}
+              camera_rgb_frame:
+                camera_rgb_optical_frame:
+                  {}
       Update Interval: 0
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 25; 255; 0
+      Enabled: true
+      Line Style: Lines
+      Line Width: 0.0299999993
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Topic: /move_base/GlobalPlanner/plan
+      Unreliable: false
+      Value: true
+    - Alpha: 1
+      Axes Length: 1
+      Axes Radius: 0.100000001
+      Class: rviz/Pose
+      Color: 255; 25; 0
+      Enabled: true
+      Head Length: 0.300000012
+      Head Radius: 0.100000001
+      Name: Pose
+      Shaft Length: 1
+      Shaft Radius: 0.0500000007
+      Shape: Arrow
+      Topic: /move_base/current_goal
+      Unreliable: false
       Value: true
   Enabled: true
   Global Options:
