@@ -1,6 +1,9 @@
 <launch>
     <include file="$(find me212base)/launch/navigation.launch" />
+    <include file="$(find apriltags)/launch/tag_tf.launch" />
     <include file="$(find me212cv)/launch/frames.launch" />
     <include file="$(find freenect_launch)/launch/freenect.launch" />
+    <include file="$(find apriltags)/launch/apriltags.launch" />
+    <node name="apriltag_localization" pkg="me212cv" type="apriltag_localization.py" />
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(find me212bot)/config/me212bot.rviz" />
 </launch>

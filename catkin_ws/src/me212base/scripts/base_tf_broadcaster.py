@@ -27,5 +27,5 @@ class TfBroadcaster():
 
 if __name__ == '__main__':
     rospy.init_node('pose_visualizer')
-    p = TfBroadcaster("/odom", "base_link", "odom")
+    p = TfBroadcaster("/odom", "base_link", "map")
     rospy.spin()

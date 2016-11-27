@@ -35,3 +35,4 @@ core
 .~lock*
 
 *.orig
+*.swp
