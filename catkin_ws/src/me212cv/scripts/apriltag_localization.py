@@ -15,9 +15,9 @@ from apriltags.msg import AprilTagDetections
 from geometry_msgs.msg import TransformStamped, Vector3, Quaternion
 
 alpha = 0.2
-pos_x = 0
-pos_y = 0
-ori = 0
+pos_x = -0.25
+pos_y = 0.5
+ori = -math.pi/2
 
 class DetectionHandler:
     def __init__(self, tb):
