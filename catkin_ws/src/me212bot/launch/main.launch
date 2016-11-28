@@ -2,7 +2,9 @@
     <include file="$(find me212base)/launch/navigation.launch" />
     <include file="$(find apriltags)/launch/tag_tf.launch" />
     <include file="$(find me212cv)/launch/frames.launch" />
-    <include file="$(find freenect_launch)/launch/freenect.launch" />
+    <include file="$(find freenect_launch)/launch/freenect.launch">
+        <arg name="depth_registration" value="true" />
+    </include>
     <include file="$(find apriltags)/launch/apriltags.launch" />
     <include file="$(find me212bot)/launch/path_tf.launch" />
     <node name="apriltag_localization" pkg="me212cv" type="apriltag_localization.py" />
