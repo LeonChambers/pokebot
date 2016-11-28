@@ -14,7 +14,7 @@ from tf.transformations import quaternion_from_euler, euler_from_quaternion
 from apriltags.msg import AprilTagDetections
 from geometry_msgs.msg import TransformStamped, Vector3, Quaternion
 
-alpha = 0.2
+alpha = 0.05
 pos_x = -0.25
 pos_y = 0.5
 ori = -math.pi/2
@@ -27,7 +27,8 @@ class DetectionHandler:
 
     def on_detection(self, msg):
         for d in msg.detections:
-            # Construct the transformation from the robot to the detected tag
+            # Construct and broadcast the transformation from the robot to the
+            # detected tag
             t = TransformStamped()
             t.header.frame_id = "camera_rgb_optical_frame"
             t.header.stamp = rospy.Time.now()
@@ -36,7 +37,16 @@ class DetectionHandler:
             t.transform.rotation = d.pose.orientation
             self.tbr.sendTransform(t)
 
-            # Compute how much the detected pose differs from the expected pose
+            # Compute the distance at which the tag was sensed
+            dist = math.sqrt(
+                d.pose.position.x**2 + d.pose.position.y**2 +
+                d.pose.position.z**2
+            )
+            if dist > 1:
+                continue
+
+            # Get the positions of the detected tag and its expected location
+            # relative to apriltag_root
             t_detected = self.tbu.lookup_transform(
                 "apriltag_root", "detected_apriltag{}".format(d.id),
                 rospy.Time.now() - rospy.Duration(0.1)
@@ -45,6 +55,9 @@ class DetectionHandler:
                 "apriltag_root", "apriltag{}".format(d.id),
                 rospy.Time.now() - rospy.Duration(0.1)
             )
+
+            # Figure out how far away the tag is
+            print dist
 
             # Update the expectations accordingly
             global pos_x, pos_y

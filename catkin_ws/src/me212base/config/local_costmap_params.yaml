@@ -1,10 +1,10 @@
 local_costmap:
   global_frame: map
   robot_base_frame: base_link
-  update_frequency: 5.0
-  publish_frequency: 2.0
+  update_frequency: 1.0
+  publish_frequency: 1.0
+  width: 2.0
+  height: 2.0
+  origin_x: -1.0
+  origin_y: -1.0
   rolling_window: true
-  width: 4.0
-  height: 4.0
-  origin_x: -2.0
-  origin_y: -2.0

@@ -2,17 +2,7 @@
 static_map: false
 resolution: 0.05
 
-# Obstacles layer
-observation_sources: laser
-laser:
-    topic: /scan
-    data_type: LaserScan
-    clearing: true
-    marking: true
-    inf_is_valid: false
-    obstacle_range: 2.0
-
 # Inflation layer
-inflation_radius: 0.25
+inflation_radius: 0.1
 
 footprint: [[0, -0.25], [0.1, -0.2], [0.1, 0.2], [0, 0.25], [-0.3, 0.2], [-0.3, -0.2]]

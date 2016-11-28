@@ -5,6 +5,12 @@
     <node name="serial_comm" pkg="me212base" type="serial_comm.py" />
     <node name="base_tf_broadcaster" pkg="me212base" type="base_tf_broadcaster.py" />
 
+    <!-- Laser Scans -->
+    <node name="pointcloud_to_laserscan" pkg="pointcloud_to_laserscan" type="pointcloud_to_laserscan_node">
+        <remap from="cloud_in" to="/camera/depth/points" />
+        <param name="target_frame" type="str" value="base_link" />
+    </node>
+
     <!-- Navigation -->
     <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
         <param name="base_global_planner" type="str" value="global_planner/GlobalPlanner" />

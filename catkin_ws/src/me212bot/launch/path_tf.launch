@@ -1,9 +1,9 @@
 <launch>
   <node name="waypoint_1_0" pkg="tf" type="static_transform_publisher" args="0 -0.545 0.3 0 0 -1.570796 apriltag0 waypoint_1_0 10" />
   <node name="waypoint_1_1" pkg="tf" type="static_transform_publisher" args="0 -0.54 0.9 0 0 -1.570796 apriltag1 waypoint_1_1 10" />
-  <node name="waypoint_1_shelf" pkg="tf" type="static_transform_publisher" args="0 -0.55 0.2 0 1.570796 -1.570796 apriltag3 waypoint_1_shelf 10" />
-  <node name="waypoint_1_3" pkg="tf" type="static_transform_publisher" args="0 -0.55 0.7 0 0 0 apriltag5 waypoint_1_3 10" />
-  <node name="waypoint_tote" pkg="tf" type="static_transform_publisher" args="0 -0.55 0.4 0 0 0 apriltag5 waypoint_tote 10" />
-  <node name="waypoint_2_shelf" pkg="tf" type="static_transform_publisher" args="0 -0.55 0.2 0 0 0 apriltag9 waypoint_2_shelf 10" />
-  <node name="waypoint_3_shelf" pkg="tf" type="static_transform_publisher" args="0 -0.55 0.2 0 0 0 apriltag8 waypoiny_3_shelf 10" />
+  <node name="waypoint_1_shelf" pkg="tf" type="static_transform_publisher" args="0 -0.55 0.25 0 1.570796 -1.570796 apriltag3 waypoint_1_shelf 10" />
+  <node name="waypoint_1_3" pkg="tf" type="static_transform_publisher" args="0 -0.55 0.7 0 0 -1.570796 apriltag5 waypoint_1_3 10" />
+  <node name="waypoint_tote" pkg="tf" type="static_transform_publisher" args="0 -0.55 0.4 0 1.570796 -1.570796 apriltag5 waypoint_tote 10" />
+  <node name="waypoint_2_shelf" pkg="tf" type="static_transform_publisher" args="0 -0.55 0.2 0 1.570796 -1.570796 apriltag9 waypoint_2_shelf 10" />
+  <node name="waypoint_3_shelf" pkg="tf" type="static_transform_publisher" args="0 -0.55 0.2 0 1.570796 -1.570796 apriltag8 waypoint_3_shelf 10" />
 </launch>

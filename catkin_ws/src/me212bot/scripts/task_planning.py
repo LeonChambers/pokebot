@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 
+import sys
+import time
 import rospy
 import tf2_ros as tf
 import actionlib
 
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+from std_srvs.srv import Empty
 
 class TaskPlanner:
     def __init__(self):
@@ -14,6 +17,9 @@ class TaskPlanner:
         self.nav_client.wait_for_server()
         self.tb = tf.Buffer()
         tl = tf.TransformListener(self.tb)
+        self.clear_costmaps = rospy.ServiceProxy(
+            "/move_base/clear_costmaps", Empty
+        )
 
     def process_waypoints(self, *points):
         """
@@ -25,18 +31,52 @@ class TaskPlanner:
             t = self.tb.lookup_transform(
                 "map", point, rospy.Time(0), rospy.Duration(1)
             )
-            self.move_to_point(t.transform.translation, t.transform.rotation)
+            print "Moving to {}".format(point)
+            if not self.move_to_point(t.transform.translation, t.transform.rotation):
+                print "Failed to move to {}".format(point)
+                return False
+        return True
 
     def move_to_point(self, pos, ori):
+        # Clear the costmap in case there is junk in it, and then make the plan
+        self.clear_costmaps()
+        time.sleep(1)
+
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = "map"
         goal.target_pose.pose.position = pos
         goal.target_pose.pose.orientation = ori
         self.nav_client.send_goal(goal)
-        while not self.nav_client.wait_for_result(rospy.Duration.from_sec(2.0)):
-            print "Waiting..."
+        for i in range(5):
+            if self.nav_client.wait_for_result(rospy.Duration.from_sec(10)):
+                break
+            self.nav_client.cancel_goal()
+            self.clear_costmaps()
+            time.sleep(1)
+            self.nav_client.send_goal(goal)
+        return (self.nav_client.get_state() == 3)
 
 if __name__ == '__main__':
     rospy.init_node('task_planning')
     planner = TaskPlanner()
-    planner.process_waypoints("waypoint_1_0", "waypoint_1_1", "waypoint_1_shelf")
+    if not planner.process_waypoints(
+        "waypoint_1_0", "waypoint_1_1", "waypoint_1_shelf",
+        "waypoint_1_shelf"
+    ):
+        sys.exit(1)
+    # # TODO: Pick up pokemon
+    # if not planner.process_waypoints("waypoint_1_3", "waypoint_tote"):
+    #     sys.exit(2)
+    # # TODO: Drop pokemon
+    # if not planner.process_waypoints("waypoint_2_shelf"):
+    #     sys.exit(3)
+    # # TODO: Pick up pokemon
+    # if not planner.process_waypoints("waypoint_tote"):
+    #     sys.exit(4)
+    # # TODO: Drop pokemon
+    # if not planner.process_waypoints("waypoint_3_shelf"):
+    #     sys.exit(5)
+    # # TODO: Pick up pokemon
+    # if not planner.process_waypoints("waypoint_tote"):
+    #     sys.exit(6)
+    # # TODO: Drop pokemon
