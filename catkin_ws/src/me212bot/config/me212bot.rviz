@@ -90,13 +90,25 @@ Visualization Manager:
           Value: true
         camera_rgb_optical_frame:
           Value: true
+        detected_apriltag100:
+          Value: true
+        detected_apriltag2:
+          Value: true
+        detected_apriltag387:
+          Value: true
+        detected_apriltag500:
+          Value: true
+        detected_apriltag572:
+          Value: true
         map:
           Value: true
         waypoint_1_0:
           Value: true
         waypoint_1_1:
           Value: true
-        waypoint_1_3:
+        waypoint_1_2:
+          Value: true
+        waypoint_1_4:
           Value: true
         waypoint_1_shelf:
           Value: true
@@ -117,8 +129,10 @@ Visualization Manager:
             apriltag0:
               waypoint_1_0:
                 {}
-            apriltag1:
               waypoint_1_1:
+                {}
+            apriltag1:
+              waypoint_1_2:
                 {}
             apriltag10:
               {}
@@ -130,7 +144,7 @@ Visualization Manager:
             apriltag4:
               {}
             apriltag5:
-              waypoint_1_3:
+              waypoint_1_4:
                 {}
               waypoint_tote:
                 {}
@@ -151,7 +165,16 @@ Visualization Manager:
                   {}
               camera_rgb_frame:
                 camera_rgb_optical_frame:
-                  {}
+                  detected_apriltag100:
+                    {}
+                  detected_apriltag2:
+                    {}
+                  detected_apriltag387:
+                    {}
+                  detected_apriltag500:
+                    {}
+                  detected_apriltag572:
+                    {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -259,10 +282,10 @@ Visualization Manager:
         Z: 0.27807501
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.734800339
+      Pitch: 1.02980018
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.15357804
+      Yaw: 3.29358363
     Saved: ~
 Window Geometry:
   Displays:

@@ -6,6 +6,7 @@
 import rospy
 import numpy as np
 import cv2  # OpenCV module
+from scipy.ndimage.filters import maximum_filter
 
 from sensor_msgs.msg import Image, CameraInfo
 from visualization_msgs.msg import Marker
@@ -35,104 +36,6 @@ fy = msg.P[5]
 cx = msg.P[2]
 cy = msg.P[6]
 
-# Task 2 object detection code
-def HSVObjectDetection(cv_image, toPrint = True):
-    hsv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
-
-    # define range of red color in HSV
-    lower_red = np.array([170,50,50])
-    upper_red = np.array([180,255,255])
-
-    lower_green = np.array([75,50,50])
-    upper_green = np.array([100,255,255])
-
-    lower_blue = np.array([110,50,50])
-    upper_blue = np.array([140,255,255])
-
-    # Threshold the HSV image to get only red colors
-    #maskr = cv2.inRange(hsv_image, lower_red, upper_red)   ##
-    #mask_erodedr         = cv2.erode(maskr, None, iterations = 3)  ##
-    #mask_eroded_dilatedr = cv2.dilate(mask_erodedr, None, iterations = 10)  ##
-
-    #maskg = cv2.inRange(hsv_image, lower_green, upper_green)   ##
-    #mask_erodedg         = cv2.erode(maskg, None, iterations = 3)  ##
-    #mask_eroded_dilatedg = cv2.dilate(mask_erodedg, None, iterations = 10)  ##
-
-    #maskb = cv2.inRange(hsv_image, lower_blue, upper_blue)   ##
-    #mask_erodedb         = cv2.erode(maskb, None, iterations = 3)  ##
-    #mask_eroded_dilatedb = cv2.dilate(mask_erodedb, None, iterations = 10)  ##
-
-    #detectorIm = (255-mask_eroded_dilatedg)
-
-    #detector = cv2.SimpleBlobDetector_create()
-
-    blank_mask = cv2.inRange(hsv_image, np.array([10,50,50]), np.array([10,50,50]))
-    mask_eroded = blank_mask
-    mask_eroded_dilated=blank_mask
-
-    #keypoints = detector.detect(detectorIm)
-    #if len(keypoints)>1:
-    #    mask_eroded = mask_erodedg
-    #    mask_eroded_dilated = mask_eroded_dilatedg
-    #else:
-    #    keypoints = detector.detect((255-mask_eroded_dilatedb))
-    #    if len(keypoints)>1:
-    #        mask_eroded = mask_erodedb
-    #        mask_eroded_dilated = mask_eroded_dilatedb
-
-    #image size = (240,320)
-
-    target = (0,0)
-
-    test_point = hsv_image[400][320][0]
-    if test_point <=180 and test_point >=170:
-        target = (170,180)
-    elif test_point <=80 and test_point>=50:
-        target = (50,80)
-    elif test_point <=140 and test_point>=110:
-        target = (110,140)
-
-    target = (170,180)
-    res = []
-    for i in range(len(hsv_image[0])):
-        if hsv_image[400][i][0] >= target[0] and hsv_image[400][i][0] <= target[1]:
-            res.append(i)
-
-    point = 0
-    s = np.std(res)
-    a = np.average(res)
-    outliers = []
-    for i in range(len(res)):
-        if i>=len(res):
-            break
-        if abs(res[i]-a)>s:
-            res.pop(i)
-            i-=1
-
-    if len(res) > 30:
-        point = res[(int)(len(res)/2)]
-
-    for i in range(len(hsv_image[0])):
-        hsv_image.itemset((400,i,0),255)
-        hsv_image.itemset((100,i,2),0)
-    for j in range(len(hsv_image)):
-        hsv_image.itemset((j,point,2),0)
-        hsv_image.itemset((j,400,2),0)
-
-    #im_with_keypoints = cv2.drawKeypoints(detectorIm, keypoints, np.array([]), (0,0,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-
-    if toPrint:
-        print test_point
-        #print point
-        #print 'hsv', hsv_image[240][320] # the center point hsv
-        #print len(keypoints)
-
-    showImageInCVWindow(hsv_image, (255-blank_mask), (255-blank_mask))
-    #showImageInCVWindow(im_with_keypoints, mask_eroded, mask_eroded_dilated)
-    image,contours,hierarchy = cv2.findContours(mask_eroded_dilated,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
-    return contours, mask_eroded_dilated
-
-# Task 3 callback
 def rosRGBDCallBack(rgb_data, depth_data):
     try:
         cv_image = cv_bridge.imgmsg_to_cv2(rgb_data, "bgr8")
@@ -141,36 +44,45 @@ def rosRGBDCallBack(rgb_data, depth_data):
     except CvBridgeError as e:
         print(e)
 
-    cv_depthimage = cv_depthimage + 2*np.absolute(cv_depthimage)
-    cv_depthimage = np.amax(cv_depthimage) - cv_depthimage
-
-    print np.amax(cv_depthimage)
-    cv2.imshow('Depth', 255*cv_depthimage/np.amax(cv_depthimage))
-
     # Convert the image to HSV
     hsv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
 
-    # Define the range of colors in HSV
-    lower_red = np.array([170, 50, 50])
-    upper_red = np.array([180,255,255])
-    lower_green = np.array([75,50,50])
-    upper_green = np.array([100,255,255])
-    lower_blue = np.array([110,50,50])
-    upper_blue = np.array([140,255,255])
+    colors = ["red", "green", "blue"]
+    colors_lower = {
+        "red": np.array([170, 50, 50]),
+        "green": np.array([75,50,50]),
+        "blue": np.array([110,50,50])
+    }
+    colors_upper = {
+        "red": np.array([180,255,255]),
+        "green": np.array([100,255,255]),
+        "blue": np.array([140,255,255])
+    }
+    color_masks = {
+        color: cv2.inRange(hsv_image, colors_lower[color], colors_upper[color])
+        for color in colors
+    }
+    kwidth = 20
+    kheight = 30
+    color_scores = {
+        color: cv2.blur(color_masks[color], (kwidth, kheight)) for color in
+        colors
+    }
+    color_maxima = {
+        color:
+            maximum_filter(color_scores[color], kheight) == color_scores[color]
+        for color in colors
+    }
+    color_thresholded = {
+        color:
+    }
+    print color_maxima
 
-    mask_red = cv2.inRange(hsv_image, lower_red, upper_red)
-    mask_green = cv2.inRange(hsv_image, lower_green, upper_green)
-    mask_blue = cv2.inRange(hsv_image, lower_blue, upper_blue)
-
-    score_red = np.multiply(cv_depthimage, mask_red)
-    score_green = np.multiply(cv_depthimage, mask_green)
-    score_blue = np.multiply(cv_depthimage, mask_blue)
-
-    ksize = 25
-    score_red = cv2.blur(score_red, (ksize, ksize))
-    best_idx_red = np.argmax(score_red)
-    best_coord_red = (best_idx_red % len(score_red[0]), best_idx_red / len(score_red[0]))
+    best_idx_red = np.argmax(color_scores["red"])
+    best_coord_red = (best_idx_red % len(color_scores["red"][0]), best_idx_red
+            / len(color_scores["red"][0]))
     cv_image_red = cv_image
+    cv2.rectangle(cv_image, pt1, pt2, color)
     cv2.circle(cv_image_red, best_coord_red, ksize, (255, 255, 0))
     cv2.imshow('Red_Best', cv_image)
     cv2.waitKey(1)

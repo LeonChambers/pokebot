@@ -56,11 +56,8 @@ class DetectionHandler:
                 rospy.Time.now() - rospy.Duration(0.1)
             )
 
-            # Figure out how far away the tag is
-            print dist
-
             # Update the expectations accordingly
-            global pos_x, pos_y
+            global pos_x, pos_y, ori
             delta_x = t_detected.transform.translation.x - t_expected.transform.translation.x
             delta_y = t_detected.transform.translation.y - t_expected.transform.translation.y
             delta_x *= alpha
@@ -68,7 +65,6 @@ class DetectionHandler:
             pos_x += delta_x*math.cos(ori) - delta_y*math.sin(ori)
             pos_y += delta_x*math.sin(ori) + delta_y*math.cos(ori)
 
-            global ori
             ori_detected = euler_from_quaternion(numpy.array([
                 t_detected.transform.rotation.x,
                 t_detected.transform.rotation.y,
@@ -84,8 +80,15 @@ class DetectionHandler:
             delta_ori = ori_detected - ori_expected
             if delta_ori > math.pi:
                 delta_ori -= 2*math.pi;
+            if delta_ori < -math.pi:
+                delta_ori += 2*math.pi
             delta_ori *= alpha
             ori += delta_ori
+            if ori > math.pi:
+                ori -= 2*math.pi
+            if ori < -math.pi:
+                ori += 2*math.pi
+            print ori, delta_ori
 
             # Compute the change in the expected position caused by a rotation
             # of apriltag_root by delta_ori in the coordinate frame of

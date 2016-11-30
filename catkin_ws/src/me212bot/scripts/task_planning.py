@@ -8,6 +8,8 @@ import actionlib
 
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from std_srvs.srv import Empty
+from geometry_msgs.msg import Twist
+from dynamixel_controllers.joint_position_controller import JointPositionController
 
 class TaskPlanner:
     def __init__(self):
@@ -20,6 +22,7 @@ class TaskPlanner:
         self.clear_costmaps = rospy.ServiceProxy(
             "/move_base/clear_costmaps", Empty
         )
+        self.cmd_vel_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=10)
 
     def process_waypoints(self, *points):
         """
@@ -36,6 +39,14 @@ class TaskPlanner:
                 print "Failed to move to {}".format(point)
                 return False
         return True
+
+    def send_command(self, vx, vtheta, duration):
+        cmd = Twist()
+        cmd.linear.x = float(vx)
+        cmd.angular.z = float(vtheta)
+        self.cmd_vel_pub.publish(cmd)
+        time.sleep(duration)
+        self.cmd_vel_pub.publish(Twist())
 
     def move_to_point(self, pos, ori):
         # Clear the costmap in case there is junk in it, and then make the plan
@@ -59,24 +70,42 @@ class TaskPlanner:
 if __name__ == '__main__':
     rospy.init_node('task_planning')
     planner = TaskPlanner()
+    time.sleep(1)
+
+    # Task 1
+    # Turn left to avoid the pokemon to the right
+    planner.send_command(0, 0.5, 2.5)
     if not planner.process_waypoints(
-        "waypoint_1_0", "waypoint_1_1", "waypoint_1_shelf",
-        "waypoint_1_shelf"
+        "waypoint_1_0", "waypoint_1_1", "waypoint_1_2", "waypoint_1_3"
     ):
         sys.exit(1)
-    # # TODO: Pick up pokemon
-    # if not planner.process_waypoints("waypoint_1_3", "waypoint_tote"):
-    #     sys.exit(2)
-    # # TODO: Drop pokemon
-    # if not planner.process_waypoints("waypoint_2_shelf"):
-    #     sys.exit(3)
-    # # TODO: Pick up pokemon
-    # if not planner.process_waypoints("waypoint_tote"):
-    #     sys.exit(4)
-    # # TODO: Drop pokemon
-    # if not planner.process_waypoints("waypoint_3_shelf"):
-    #     sys.exit(5)
-    # # TODO: Pick up pokemon
-    # if not planner.process_waypoints("waypoint_tote"):
-    #     sys.exit(6)
-    # # TODO: Drop pokemon
+    # TODO: Pick up pokemon
+    # Back up safely before going to the tote
+    planner.send_command(-0.1, -0.5, 6)
+    if not planner.process_waypoints("waypoint_1_4", "waypoint_tote"):
+        sys.exit(2)
+    # TODO: Drop pokemon
+
+    # Task 2
+    # Back up safely before going to the shelf
+    planner.send_command(-0.25, 0, 2.5)
+    if not planner.process_waypoints("waypoint_2_shelf"):
+        sys.exit(3)
+    # TODO: Pick up pokemon
+    # Back up safely before going to the tote
+    planner.send_command(-0.25, 0, 2.5)
+    if not planner.process_waypoints("waypoint_tote"):
+        sys.exit(4)
+    # TODO: Drop pokemon
+
+    # Task 3
+    # Back up safely before going to the shelf
+    planner.send_command(-0.25, 0, 2.5)
+    if not planner.process_waypoints("waypoint_3_shelf"):
+        sys.exit(5)
+    # TODO: Pick up pokemon
+    # Back up safely before going to the tote
+    planner.send_command(-0.25, 0, 2.5)
+    if not planner.process_waypoints("waypoint_tote"):
+        sys.exit(6)
+    # TODO: Drop pokemon

@@ -7,7 +7,7 @@
 
     <!-- Laser Scans -->
     <node name="pointcloud_to_laserscan" pkg="pointcloud_to_laserscan" type="pointcloud_to_laserscan_node">
-        <remap from="cloud_in" to="/camera/depth/points" />
+        <remap from="cloud_in" to="/camera/depth_registered/points" />
         <param name="target_frame" type="str" value="base_link" />
     </node>
 
