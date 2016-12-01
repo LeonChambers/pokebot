@@ -47,8 +47,8 @@ void loop() {
         wheelVelCtrl.doPIControl("Left",  serialComm.desiredWV_L, encoder.v_L);
         wheelVelCtrl.doPIControl("Right", serialComm.desiredWV_R, encoder.v_R);
 
-        myservo.write(1500);
-        //myservo.write((int)serialComm.Claw_Position);
+        //myservo.write(1500);
+        myservo.write((int)serialComm.Claw_Position);
 
         prevTime = currentTime; // update time
     }

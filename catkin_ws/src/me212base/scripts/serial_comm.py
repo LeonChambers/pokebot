@@ -97,7 +97,7 @@ class Arduino():
 
 def main():
     rospy.init_node('me212bot', anonymous=True)
-    arduino = Arduino('/dev/ttyACM1')
+    arduino = Arduino('/dev/ttyACM0')
     rospy.spin()
 
 if __name__=='__main__':

@@ -26,7 +26,7 @@ class TaskPlanner:
         self.blue = [0,0]
         self.green = [0,0]
         self.has_seen_apriltag = False
-        tl = tf.TransformListener(self.tb)
+        self.tl = tf.TransformListener(self.tb)
         self.clear_costmaps = rospy.ServiceProxy(
             "/move_base/clear_costmaps", Empty
         )
@@ -102,10 +102,10 @@ class TaskPlanner:
         self.joint2_pub.publish(theta)
 
     def open_gripper(self):
-        self.gripper_pub.publish(2500)
+        self.gripper_pub.publish(1500)
 
     def close_gripper(self):
-        self.gripper_pub.publish(1900)
+        self.gripper_pub.publish(800)
 
     def pick_up_pokemon(self, x):
         self.close_gripper()
@@ -117,15 +117,26 @@ class TaskPlanner:
         self.open_gripper()
         time.sleep(1)
 
-    def x_error(self, waypoint):
+    def xy_error(self, waypoint):
         """
         Moves the arm base to correct for the error in moving to the waypoint
         given by `waypoint`
         """
         t_detected = self.tbu.lookup_transform(
-            "base_link", waypoint, rospy.Time.now(), rospy.Duration(0.1)
+            "base_link", waypoint, rospy.Time.now(), rospy.Duration(0.2)
         )
-        return t_detected.transform.translation.x
+        return (
+            t_detected.transform.translation.x,
+            t_detected.transform.translation.y
+        )
+
+ARM_UP = 1.5
+ARM_DOWN = 2.5
+
+INIT = False
+TASK1 = False
+TASK2 = False
+TASK3 = True
 
 if __name__ == '__main__':
     rospy.init_node('task_planning')
@@ -133,155 +144,182 @@ if __name__ == '__main__':
     time.sleep(1)
 
     # Lift the arm up before we start driving
-    planner.move_arm(0, 1.5)
+    planner.move_arm(0, ARM_UP)
     planner.open_gripper()
 
-    # Wait until you can see an apriltag
-    #print "Waiting to see an apriltag"
-    while not planner.has_seen_apriltag:
-        time.sleep(0.1)
-    #print "Starting navigation"
-    ##### Task 1 #####
-    #print "Starting task 1"
-    # Turn left to avoid the pokemon to the right
-    planner.send_command(0, 0.5, 2.5)
-    if not planner.process_waypoints(
-        "waypoint_1_0", "waypoint_1_1", "waypoint_1_2"
-    ):
-        sys.exit(1)
-    # Move the arm down to grab the pidgey
-    x = planner.x_error("waypoint_1_2")
-    planner.move_arm(-x, 2.5)
-    time.sleep(5)
-    planner.send_command(0.1, 0, 1.5)
+    ##### Initialization #####
+    if INIT:
+        # Wait until you can see an apriltag
+        #print "Waiting to see an apriltag"
+        while not planner.has_seen_apriltag:
+            time.sleep(0.1)
 
-    # Pick up the pidgey
-    planner.pick_up_pokemon(-x)
-    # Back up safely before going to the tote
-    planner.send_command(-0.1, -0.5, 7)
-    planner.send_command(0, -0.1, 2)
-    if not planner.process_waypoints("waypoint_1_3", "waypoint_tote"):
-        sys.exit(2)
-    planner.drop_pokemon()
-    # planner.open_gripper()
-    # planner.open_gripper()
-    # planner.open_gripper()
-    # planner.open_gripper()
-    # planner.open_gripper()
-    # planner.open_gripper()
-    # planner.open_gripper()
-    # planner.open_gripper()
-    # planner.open_gripper()
-    # planner.open_gripper()
-    # planner.open_gripper()
+    print "Starting navigation"
+
+    ##### Task 1 #####
+    if TASK1:
+        print "Starting task 1"
+        # Turn left to avoid the pokemon to the right
+        planner.send_command(0, 0.5, ARM_DOWN)
+        if not planner.process_waypoints(
+            "waypoint_1_0", "waypoint_1_1", "waypoint_1_2"
+        ):
+            sys.exit(1)
+        # Move the arm down to grab the pidgey
+        x_error, y_error = planner.xy_error("waypoint_1_2")
+        planner.move_arm(y_error, ARM_DOWN)
+        time.sleep(5)
+        planner.send_command(0.1, 0, 1.5 + 10*x_error)
+        time.sleep(1)
+
+        # Pick up the pidgey
+        planner.pick_up_pokemon(y_error)
+        # Back up safely before going to the tote
+        planner.send_command(-0.1, -0.5, 6)
+        planner.send_command(0, -0.2, 2)
+        if not planner.process_waypoints("waypoint_1_3", "waypoint_tote"):
+            sys.exit(1)
+        planner.drop_pokemon()
 
     ##### Task 2 ####
-    print "Starting task 2"
-    # Back up safely before going to the shelf
-    planner.send_command(-0.15, 0, 2.5)
-    planner.move_arm(0, 2.5)
-    if not planner.process_waypoints("waypoint_2_0"):
-        sys.exit(3)
+    if TASK2:
+        print "Starting task 2"
+        # Back up safely before going to the shelf
+        planner.send_command(-0.15, 0, 2.5)
+        planner.move_arm(0, ARM_UP)
+        if not planner.process_waypoints("waypoint_2_0"):
+            sys.exit(1)
 
-    # Figure out which pokemon to pick up
-    red_patch = False
-    blue_patch = False
-    for i in range(3):
-        for j in range(len(planner.red)/2):
-            if planner.red[2*j+1] < 0:
-                red_patch = True
+        # Figure out which pokemon to pick up
+        red_patch = False
+        blue_patch = False
+        for i in range(3):
+            for j in range(len(planner.red)/2):
+                if planner.red[2*j+1] < 0:
+                    red_patch = True
+                    print "Found red patch"
+                    break
+            for j in range(len(planner.blue)/2):
+                if planner.blue[2*j+1] < 0:
+                    blue_patch = True
+                    print "Found blue patch"
+                    break
+            time.sleep(0.1)
+        green_patch = (not (red_patch or blue_patch))
+        if green_patch:
+            print "No patch found. Assuming green"
+
+        red_location = None
+        blue_location = None
+        location_names = ["center", "left", "right"]
+        for i in range(3):
+            for j in range(len(planner.red)/2):
+                x = planner.red[2*j]
+                y = planner.red[2*j+1]
+                if y > 0:
+                    if abs(x) < 0.1:
+                        red_location = 0
+                    elif x > 0:
+                        red_location = 1
+                    else:
+                        red_location = -1
+                    print "Found red object in {}".format(
+                        location_names[red_location]
+                    )
+            for j in range(len(planner.blue)/2):
+                x = planner.blue[2*j]
+                y = planner.blue[2*j+1]
+                if y > 0:
+                    if abs(x) < 0.1:
+                        blue_location = 0
+                    elif x > 0:
+                        blue_location = 1
+                    else:
+                        blue_location = -1
+                    print "Found blue object in {}".format(
+                        location_names[blue_location]
+                    )
+            if red_location is not None and blue_location is not None:
                 break
-        for j in range(len(planner.blue)/2):
-            if planner.blue[2*j+1] < 0:
-                blue_patch = True
-                break
-        time.sleep(0.1)
-    green_patch = (not (red_patch or blue_patch))
+        possible_locations = [-1, 0, 1]
+        if red_location is not None:
+            possible_locations.remove(red_location)
+        if blue_location is not None:
+            possible_locations.remove(blue_location)
+        green_location = 0 if len(possible_locations) > 1 else possible_locations[0]
+        print "Assuming green object is in {}".format(
+            location_names[green_location]
+        )
 
-    red_location = None
-    blue_location = None
-    for i in range(3):
-        for j in range(len(planner.red)/2):
-            x = planner.red[2*j]
-            y = planner.red[2*j+1]
-            if y > 0:
-                if abs(x) < 0.1:
-                    red_location = 0
-                elif x > 0:
-                    red_location = 1
-                else:
-                    red_location = -1
-        for j in range(len(planner.blue)/2):
-            x = planner.blue[2*j]
-            y = planner.blue[2*j+1]
-            if y > 0:
-                if abs(x) < 0.1:
-                    blue_location = 0
-                elif x > 0:
-                    blue_location = 1
-                else:
-                    blue_location = -1
-        if red_location is not None and blue_location is not None:
-            break
-    possible_locations = [-1, 0, 1]
-    if red_location is not None:
-        possible_locations.remove(red_location)
-    if blue_location is not None:
-        possible_locations.remove(blue_location)
-    green_location = possible_locations[0]
+        location = 0
+        if red_patch:
+            location = red_location
+        elif blue_patch:
+            location = blue_location
+        else:
+            location = green_location
+        print "Moving to {} location".format(location_names[location])
 
-    location = 0
-    if red_patch:
-        location = red_location
-    elif blue_patch:
-        location = blue_location
-    else:
-        location = green_location
+        #Assign and move to waypoint
+        waypoint = ""
+        if location==-1:
+            waypoint = "waypoint_2_shelf1"
+            #planner.send_command(0, -0.2, 4)
+        elif location==0:
+            waypoint = "waypoint_2_shelf2"
+        else:
+            waypoint = "waypoint_2_shelf3"
+            #planner.send_command(0, 0.2, 4)
 
-    #Assign and move to waypoint
-    waypoint = ""
-    if location==-1:
-        waypoint = "waypoint_2_shelf1"
-    elif location==0:
-        waypoint = "waypoint_2_shelf2"
-    else:
-        waypoint = "waypoint_2_shelf3"
+        planner.send_command(-0.2, 0, 2)
+        if not planner.process_waypoints(waypoint):
+            sys.exit(1)
 
-    #print waypoint
-    #sys.exit(1)
+        # Move the arm down to grab the pidgey
+        (x_error, y_error) = planner.xy_error(waypoint)
+        planner.move_arm(y_error, ARM_DOWN)
+        time.sleep(5)
 
-    if not planner.process_waypoints(waypoint):
-        sys.exit(4)
-        
-    # Move the arm down to grab the pidgey
-    x = planner.x_error(waypoint)
-    planner.move_arm(-x, 2.5)
-    time.sleep(5)
-        
-    planner.send_command(0.1, 0, 1.5)
+        planner.send_command(0.1, 0, 1.5 + 10*x_error)
+        time.sleep(1)
 
-    #pick up pokemon
-    planner.pick_up_pokemon()
+        #pick up pokemon
+        planner.pick_up_pokemon(y_error)
 
-    # Back up safely before going to the tote
-    planner.send_command(-0.25, 0, 2.5)
-    if not planner.process_waypoints("waypoint_tote"):
-        sys.exit(4)
+        # Back up safely before going to the tote
+        planner.send_command(-0.25, 0, 2.5)
+        planner.send_command(0, 0.3, 10)
+        if not planner.process_waypoints("waypoint_tote"):
+            sys.exit(1)
+        time.sleep(1)
 
-    # Drop pokemon
-    planner.drop_pokemon()
+        # Drop pokemon
+        planner.drop_pokemon()
 
-    # Task 3
-    # Back up safely before going to the shelf
-    planner.send_command(-0.25, 0, 2.5)
-    if not planner.process_waypoints("waypoint_3_shelf"):
-        sys.exit(5)
-    # Pick up pokemon
-    planner.pick_up_pokemon()
+    ##### Task 3 #####
+    if TASK3:
+        # Back up safely before going to the shelf
+        planner.send_command(-0.25, 0, 2.5)
+        planner.send_command(0, -0.3, 10)
+        if not planner.process_waypoints("waypoint_3_shelf"):
+            sys.exit(1)
 
-    # Back up safely before going to the tote
-    planner.send_command(-0.25, 0, 2.5)
-    if not planner.process_waypoints("waypoint_tote"):
-        sys.exit(6)
-    # Drop pokemon
-    planner.drop_pokemon()
+        (x_error, y_error) = planner.xy_error("waypoint_3_shelf")
+        planner.move_arm(y_error, 2.5)
+        time.sleep(5)
+
+        planner.send_command(0.1, 0, 1.5 + 10*x_error)
+        time.sleep(1)
+
+        # Pick up pokemon
+        planner.pick_up_pokemon(y_error)
+
+        # Back up safely before going to the tote
+        planner.send_command(-0.25, 0, 2.5)
+        planner.send_command(0, -0.3, 10)
+        planner.move_arm(0, ARM_UP)
+        if not planner.process_waypoints("waypoint_tote"):
+            sys.exit(1)
+        time.sleep(1)
+        # Drop pokemon
+        planner.drop_pokemon()
