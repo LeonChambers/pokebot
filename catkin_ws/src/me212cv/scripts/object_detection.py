@@ -7,11 +7,14 @@ import rospy
 import numpy as np
 import cv2  # OpenCV module
 from scipy.ndimage.filters import maximum_filter
+from scipy.signal import medfilt
 
 from sensor_msgs.msg import Image, CameraInfo
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point, Pose, Twist, Vector3, Quaternion
-from std_msgs.msg import ColorRGBA
+from std_msgs.msg import (
+    ColorRGBA, Float32MultiArray, MultiArrayLayout, MultiArrayDimension
+)
 
 from cv_bridge import CvBridge, CvBridgeError
 import message_filters
@@ -36,77 +39,94 @@ fy = msg.P[5]
 cx = msg.P[2]
 cy = msg.P[6]
 
+colors = ["red", "blue"]
+colors_bgr = {
+    "red": (0, 0, 255),
+    "green": (0, 255, 0),
+    "blue": (255, 0, 0),
+    "yellow": (0, 100, 100)
+}
+colors_lower = {
+    "red": np.array([0, 90, 90]),
+    "green": np.array([110,20,20]),
+    "blue": np.array([110,70,70]),
+    "yellow": np.array([20,50,50])
+}
+colors_upper = {
+    "red": np.array([20,255,255]),
+    "green": np.array([140,255,255]),
+    "blue": np.array([140,255,255]),
+    "yellow": np.array([40,255,255])
+}
+color_publishers = {
+    color: rospy.Publisher(
+        "/object_detections/{}".format(color), Float32MultiArray, queue_size=10
+    ) for color in colors
+}
+
 def rosRGBDCallBack(rgb_data, depth_data):
     try:
         cv_image = cv_bridge.imgmsg_to_cv2(rgb_data, "bgr8")
         cv_depthimage = cv_bridge.imgmsg_to_cv2(depth_data, "16SC1")
-        #cv_depthimage2 = np.array(cv_depthimage, dtype=np.float32)
     except CvBridgeError as e:
         print(e)
 
     # Convert the image to HSV
     hsv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
 
-    colors = ["red", "green", "blue"]
-    colors_lower = {
-        "red": np.array([170, 50, 50]),
-        "green": np.array([75,50,50]),
-        "blue": np.array([110,50,50])
-    }
-    colors_upper = {
-        "red": np.array([180,255,255]),
-        "green": np.array([100,255,255]),
-        "blue": np.array([140,255,255])
-    }
     color_masks = {
         color: cv2.inRange(hsv_image, colors_lower[color], colors_upper[color])
         for color in colors
     }
-    kwidth = 20
-    kheight = 30
+    kwidth = 41
+    kheight = 65
     color_scores = {
-        color: cv2.blur(color_masks[color], (kwidth, kheight)) for color in
-        colors
+        color: cv2.blur(color_masks[color], (kwidth, kheight)) +
+        np.random.randn(len(color_masks[color]), len(color_masks[color][0]))
+        for color in colors
     }
     color_maxima = {
         color:
             maximum_filter(color_scores[color], kheight) == color_scores[color]
         for color in colors
     }
+    threshold = 80
     color_thresholded = {
-        color:
+        color: color_scores[color] > threshold for color in colors
     }
-    print color_maxima
+    color_object_map = {
+        color: np.logical_and(color_maxima[color], color_thresholded[color])
+        for color in colors
+    }
+    color_object_locations = {
+        color: np.argwhere(color_object_map[color]) for color in colors
+    }
 
-    best_idx_red = np.argmax(color_scores["red"])
-    best_coord_red = (best_idx_red % len(color_scores["red"][0]), best_idx_red
-            / len(color_scores["red"][0]))
-    cv_image_red = cv_image
-    cv2.rectangle(cv_image, pt1, pt2, color)
-    cv2.circle(cv_image_red, best_coord_red, ksize, (255, 255, 0))
-    cv2.imshow('Red_Best', cv_image)
-    cv2.waitKey(1)
-
-    #for cnt in contours:
-    #    xp,yp,w,h = cv2.boundingRect(cnt)
-
-        # Get depth value from depth image, need to make sure the value is in the normal range 0.1-10 meter
-    #    if not math.isnan(cv_depthimage2[int(yp)][int(xp)]) and cv_depthimage2[int(yp)][int(xp)] > 0.1 and cv_depthimage2[int(yp)][int(xp)] < 10.0:
-    #        zc = cv_depthimage2[int(yp)][int(xp)]
-            #print 'zc', zc
-    #    else:
-    #        continue
-
-    #    centerx, centery = xp+w/2, yp+h/2
-    #    cv2.rectangle(cv_image,(xp,yp),(xp+w,yp+h),[0,255,255],2)
-
-    #    showPyramid(centerx, centery, zc, w, h)
-
-    # for i in range(len(cv_depthimage2)):
-    #     for j in range(len(cv_depthimage2[0])):
-    #         if cv_depthimage2[i][j] < 0.5:
-    #             cv_image.itemset((i,j,2),0)
-    # showImageInCVWindow(cv_image, (255-blank_mask), (255-blank_mask))
+    for color in colors:
+        locs = color_object_locations[color]
+        values = []
+        for i in range(min(len(locs), 5)):
+            loc = locs[i, :]
+            center_x = loc[1]
+            center_y = loc[0]
+            values.extend([(center_x - cx) / fx, (center_y - cy) / fy])
+            pt1 = (center_x - (kwidth/2), center_y - (kheight/2))
+            pt2 = (center_x + (kwidth/2), center_y + (kheight/2))
+            cv2.rectangle(
+                cv_image, pt1, pt2, colors_bgr[color]
+            )
+            depth = cv_depthimage[loc[0], loc[1]]
+            cv2.putText(
+                cv_image, str(depth), (loc[1], loc[0]), cv2.FONT_HERSHEY_PLAIN,
+                1, (255, 255, 255)
+            )
+        dim = MultiArrayDimension("coordinates", len(values), 1)
+        layout = MultiArrayLayout((dim,), 0)
+        color_publishers[color].publish(layout, values)
+    # cv2.imshow('Objects', cv_image)
+    # for color in colors:
+    #     cv2.imshow(color, color_masks[color])
+    # cv2.waitKey(3)
 
 def getXYZ(xp, yp, zc, fx,fy,cx,cy):
     ##
@@ -115,57 +135,6 @@ def getXYZ(xp, yp, zc, fx,fy,cx,cy):
     xc = xn * zc
     yc = yn * zc
     return (xc,yc,zc)
-
-def showImageInCVWindow(cv_image, mask_erode_image, mask_image):
-    # Bitwise-AND mask and original image
-    res = cv2.bitwise_and(cv_image, cv_image, mask = mask_image)
-
-    # Draw a cross at the center of the image
-    cv2.line(cv_image, (320, 235), (320, 245), (255,0,0))
-    cv2.line(cv_image, (325, 240), (315, 240), (255,0,0))
-
-    # Show the images
-    cv2.imshow('OpenCV_Original', cv_image)
-    cv2.imshow('OpenCV_Mask_Erode', mask_erode_image)
-    cv2.imshow('OpenCV_Mask_Dilate', mask_image)
-    cv2.imshow('OpenCV_View', res)
-    cv2.waitKey(3)
-
-# Create a pyramid using 4 triangles
-def showPyramid(xp, yp, zc, w, h):
-    # X1-X4 are the 4 corner points of the base of the pyramid
-    X1 = getXYZ(xp-w/2, yp-h/2, zc, fx, fy, cx, cy)
-    X2 = getXYZ(xp-w/2, yp+h/2, zc, fx, fy, cx, cy)
-    X3 = getXYZ(xp+w/2, yp+h/2, zc, fx, fy, cx, cy)
-    X4 = getXYZ(xp+w/2, yp-h/2, zc, fx, fy, cx, cy)
-    vis_pub.publish(createTriangleListMarker(1, [X1, X2, X3, X4], rgba = [1,0,0,1], frame_id = '/camera'))
-
-# Create a list of Triangle markers for visualization
-def createTriangleListMarker(marker_id, points, rgba, frame_id = '/camera'):
-    marker = Marker()
-    marker.header.frame_id = frame_id
-    marker.type = marker.TRIANGLE_LIST
-    marker.scale = Vector3(1,1,1)
-    marker.id = marker_id
-
-    n = len(points)
-
-    if rgba is not None:
-        marker.color = ColorRGBA(*rgba)
-
-    o = Point(0,0,0)
-    for i in xrange(n):
-        p = Point(*points[i])
-        marker.points.append(p)
-        p = Point(*points[(i+1)%4])
-        marker.points.append(p)
-        marker.points.append(o)
-
-    marker.pose = poselist2pose([0,0,0,0,0,0,1])
-    return marker
-
-def poselist2pose(poselist):
-    return Pose(Point(*poselist[0:3]), Quaternion(*poselist[3:7]))
 
 if __name__=='__main__':
     image_sub = message_filters.Subscriber("/camera/rgb/image_rect_color", Image)

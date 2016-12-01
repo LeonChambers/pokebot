@@ -7,6 +7,7 @@
     </include>
     <include file="$(find apriltags)/launch/apriltags.launch" />
     <include file="$(find me212bot)/launch/path_tf.launch" />
+    <include file="$(find me212arm)/launch/arm.launch" />
     <node name="apriltag_localization" pkg="me212cv" type="apriltag_localization.py" />
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(find me212bot)/config/me212bot.rviz" respawn="true" />
 </launch>

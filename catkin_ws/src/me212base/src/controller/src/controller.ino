@@ -6,6 +6,7 @@
 
 #include "Arduino.h"
 #include "helper.h"
+#include <ServoTimer2.h>
 
 EncoderMeasurement  encoder(26);      // encoder handler class, set the motor type 53 or 26 here
 RobotPose           robotPose;        // robot position and orientation calculation class
@@ -15,11 +16,15 @@ unsigned long       prevTime = 0;
 
 boolean usePathPlanner = true;
 
+ServoTimer2 myservo;
+
+
 void setup() {
     Serial.begin(115200);       // initialize Serial Communication
     encoder.init();  // connect with encoder
     wheelVelCtrl.init();        // connect with motor
     delay(1e3);                 // delay 1000 ms so the robot doesn't drive off without you
+    myservo.attach(3);
 }
 
 void loop() {
@@ -41,6 +46,9 @@ void loop() {
         // 4. Send the velocity command to wheel velocity controller
         wheelVelCtrl.doPIControl("Left",  serialComm.desiredWV_L, encoder.v_L);
         wheelVelCtrl.doPIControl("Right", serialComm.desiredWV_R, encoder.v_R);
+
+        myservo.write(1500);
+        //myservo.write((int)serialComm.Claw_Position);
 
         prevTime = currentTime; // update time
     }

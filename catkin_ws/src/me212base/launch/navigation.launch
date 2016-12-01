@@ -16,6 +16,7 @@
         <param name="base_global_planner" type="str" value="global_planner/GlobalPlanner" />
         <param name="base_local_planner" type="str" value="base_local_planner/TrajectoryPlannerROS" />
         <param name="recovery_behavior_enabled" type="bool" value="false" />
+        <param name="clearing_rotation_allowed" type="bool" value="false" />
 
         <rosparam file="$(find me212base)/config/costmap_common_params.yaml" command="load" ns="global_costmap" />
         <rosparam file="$(find me212base)/config/costmap_common_params.yaml" command="load" ns="local_costmap" />

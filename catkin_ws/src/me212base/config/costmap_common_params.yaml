@@ -1,8 +1,8 @@
 # Global parameters
 static_map: false
-resolution: 0.05
+resolution: 0.01
 
 # Inflation layer
-inflation_radius: 0.2
+inflation_radius: 0.3
 
 footprint: [[0, -0.25], [0.1, -0.2], [0.1, 0.2], [0, 0.25], [-0.3, 0.2], [-0.3, -0.2]]

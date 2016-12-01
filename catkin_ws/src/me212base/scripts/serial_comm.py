@@ -12,6 +12,7 @@ import traceback
 from tf.transformations import quaternion_from_euler as e_to_quat
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist, Quaternion
+from std_msgs.msg import Int32
 
 b = 0.225
 
@@ -23,7 +24,7 @@ class DummySerial:
         return "0,0,0"
 
 class Arduino():
-    def __init__(self, port = '/dev/ttyACM0'):
+    def __init__(self, port):
         if port is None:
             self.comm = DummySerial()
         else:
@@ -32,6 +33,9 @@ class Arduino():
         self.odom.child_frame_id = 'base_link'
 
         self.cmd_vel_sub = rospy.Subscriber("cmd_vel", Twist, self.on_cmd_vel)
+        self.gripper_pub = rospy.Subscriber(
+            "gripper_pos", Int32, self.on_gripper_pos
+        )
         self.odom_pub = rospy.Publisher(
             "/odom", Odometry, queue_size=10
         )
@@ -39,19 +43,31 @@ class Arduino():
         self.thread = threading.Thread(target = self.loop)
         self.thread.start()
 
+        self.vr = 0
+        self.vl = 0
+        self.gripper_pos = 0
+
     def on_cmd_vel(self, msg):
         # Compute wheel velocities from the Twist message
         vx = msg.linear.x
         vtheta = msg.angular.z
-        vr = vx + vtheta * b
-        vl = vx - vtheta * b
+        self.vr = vx + vtheta * b
+        self.vl = vx - vtheta * b
 
         # Send the wheel velocities
-        serial_msg = "%f,%f\n" % (vr, vl)
+        serial_msg = "%f,%f,%d\n" % (self.vr, self.vl, self.gripper_pos)
+        print serial_msg
         self.comm.write(serial_msg)
 
         # Update the odometry message with the new velocities
         self.odom.twist.twist = msg
+
+    def on_gripper_pos(self, msg):
+        self.gripper_pos = msg.data
+
+        serial_msg = "%f,%f,%d\n" % (self.vr, self.vl, self.gripper_pos)
+        print serial_msg
+        self.comm.write(serial_msg)
 
     def loop(self):
         while not rospy.is_shutdown():
@@ -81,7 +97,7 @@ class Arduino():
 
 def main():
     rospy.init_node('me212bot', anonymous=True)
-    arduino = Arduino('/dev/ttyACM0')
+    arduino = Arduino('/dev/ttyACM1')
     rospy.spin()
 
 if __name__=='__main__':
