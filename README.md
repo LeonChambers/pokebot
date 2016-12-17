@@ -1,4 +1,6 @@
-#2.12 Final Project Initial Repo
+#2.12 Final Project Team 4B
+
+This repository contains the code used for my group's 2.12 (Introduction to Robotics) project at MIT. The rules for the competition are available in [Rules.pdf](./Rules.pdf). [Presentation.pdf](./Presentation.pdf) gives an overview of our approach to the problem.
 
 ##Structure
 ###In 'catkin_ws/src':
